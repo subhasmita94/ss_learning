@@ -94,6 +94,12 @@ view: order_items {
     type: number
     sql: ${sale_price} - ${inventory_items.cost} ;;
   }
+  dimension: age_group {
+    type:  tier
+    sql: ${users.age} ;;
+    tiers: [19,30,45,60]
+    style: integer
+  }
 
   measure: count {
     type: count
@@ -114,6 +120,33 @@ view: order_items {
     value_format_name: usd
     drill_fields: [detail*]
   }
+
+  measure: curr_month_revenue  {
+    type: sum
+    sql:  ${sale_price} ;;
+    value_format_name: usd
+    drill_fields: [detail*]
+    filters: {field:created_month value:"this month"}
+  }
+
+  parameter: item_to_add_up {
+    type: unquoted
+    allowed_value: {
+      label: "Total Sale Price"
+      value: "total_revenue"
+    }
+    allowed_value: {
+      label: "Total Cost"
+      value: "total_profit"
+    }
+  }
+
+  measure: dynamic_sum {
+    type: sum
+    sql: ${TABLE}.{% parameter item_to_add_up %} ;;
+    value_format_name: "usd"
+  }
+
 
   # ----- Sets of fields for drilling ------
   set: detail {
