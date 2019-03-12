@@ -90,8 +90,28 @@ view: order_items {
     sql: ${TABLE}."USER_ID" ;;
   }
 
+  dimension: gross_margin {
+    type: number
+    sql: ${sale_price} - ${inventory_items.cost} ;;
+  }
+
   measure: count {
     type: count
+    drill_fields: [detail*]
+  }
+
+  measure: total_revenue {
+    type: sum
+    sql: ${sale_price} ;;
+    value_format_name: usd
+    drill_fields: [detail*]
+
+  }
+
+  measure: total_profit {
+    type:  sum
+    sql: ${gross_margin} ;;
+    value_format_name: usd
     drill_fields: [detail*]
   }
 
