@@ -21,6 +21,37 @@ view: order_items {
     sql: ${TABLE}."CREATED_AT" ;;
   }
 
+  dimension: reporting_period{
+    group_label: "Order date"
+    sql: CASE
+         WHEN date_part('year',${created_raw}) = date_part('year' , current_date)
+         AND ${created_raw} < current_date THEN 'This Year To Date'
+
+        WHEN date_part('year',${created_raw}) +1 = date_part('year',current_date)
+        AND date_part('dayofyear',${created_raw}) <= date_part('dayofyear',current_date)
+        THEN 'Last Year to Date'
+
+        END
+
+
+        ;;
+  }
+
+  dimension: days_since_sold {
+    hidden: yes
+    sql:  datediff('day',${created_raw},current_date) ;;
+
+  }
+
+  dimension: months_since_signup {
+    view_label: "Orders"
+    type: number
+    sql: datediff('month',${users.created_raw},${created_raw} ;;
+  }
+
+
+
+
   dimension_group: delivered {
     type: time
     timeframes: [
@@ -84,6 +115,34 @@ view: order_items {
     sql: ${TABLE}."STATUS" ;;
   }
 
+
+  dimension: days_to_process {
+    type: number
+    sql: CASE
+        WHEN ${status} = 'Processing' THEN DATEDIFF('day',${created_raw},CURRENT_DATE())*1.0
+        WHEN ${status} IN ('Shipped', 'Complete', 'Returned') THEN DATEDIFF('day',${created_raw},${shipped_raw})*1.0
+        WHEN ${status} = 'Cancelled' THEN NULL
+      END
+       ;;
+  }
+
+  dimension: shipping_time {
+    type: number
+    sql: datediff('day',${shipped_raw},${delivered_raw})*1.0 ;;
+  }
+
+  measure: average_days_to_process {
+    type: average
+    value_format_name: decimal_2
+    sql: ${days_to_process} ;;
+  }
+
+  measure: average_shipping_time {
+    type: average
+    value_format_name: decimal_2
+    sql: ${shipping_time} ;;
+  }
+
   dimension: user_id {
     type: string
     # hidden: yes
@@ -103,6 +162,13 @@ view: order_items {
 
   measure: count {
     type: count
+    drill_fields: [detail*]
+  }
+
+  measure: order_count {
+    view_label: "Orders"
+    type: count_distinct
+    sql: ${order_id} ;;
     drill_fields: [detail*]
   }
 
@@ -148,8 +214,33 @@ view: order_items {
   }
 
   measure: count_last_28d {
+    label: "Count sold in trailing 28 days"
+    type: count_distinct
+    sql: ${id} ;;
+    filters: {
+      field: created_date
+      value: "28 days"
+    }
 
   }
+
+  measure: month_count {
+    type: count_distinct
+    drill_fields: [detail*]
+    sql: ${created_month} ;;
+  }
+
+  measure: first_order {
+    type: date_raw
+    sql: MIN(${created_date} ;;
+  }
+
+  measure: last_order {
+    type: date_raw
+    sql: MAX(${created_date} ;;
+  }
+
+
 
 
   # ----- Sets of fields for drilling ------
