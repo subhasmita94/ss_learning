@@ -81,8 +81,72 @@ view: inventory_items {
     sql: ${TABLE}."SOLD_AT" ;;
   }
 
+  dimension: is_sold {
+    type: yesno
+    sql: ${sold_raw} is not null ;;
+
+  }
+
+  dimension: days_since_arrival {
+    description: "days since created - useful when filtering on sold yesno for items still in inventory"
+    type: number
+    sql: DATEDIFF('day',${created_date},CURRENT_DATE) ;;
+
+  }
+
+  dimension: days_since_arrival_grp {
+    type: tier
+    sql: ${days_since_arrival} ;;
+    style: integer
+    tiers: [0,10,30,60,100,150,200,250]
+  }
+
   measure: count {
     type: count
-    drill_fields: [id, product_name, products.id, products.name, order_items.count]
+    drill_fields: [detail*]
   }
+
+  measure: average_cost {
+    type: average
+    sql: ${cost} ;;
+  }
+
+  measure: sold_count {
+    type: count
+    drill_fields: [detail*]
+
+    filters: {
+      field: is_sold
+      value: "Yes"
+    }
+  }
+
+  measure: sold_percent {
+    type: number
+    value_format_name: percent_2
+    sql: 1.0* ${sold_count} / NULLIF(${count},0) ;;
+  }
+
+  measure: total_cost {
+    type: sum
+    value_format: "usd"
+    sql: ${cost} ;;
+  }
+
+  measure: product_on_hand {
+    type: count
+    drill_fields: [detail*]
+
+    filters: {
+      field: is_sold
+      value: "No"
+    }
+  }
+
+
+
+  set: detail {
+    fields: [id, products.item_name, products.category, products.brand, products.department, cost, created_time, sold_time]
+  }
+
 }

@@ -147,6 +147,10 @@ view: order_items {
     value_format_name: "usd"
   }
 
+  measure: count_last_28d {
+
+  }
+
 
   # ----- Sets of fields for drilling ------
   set: detail {
